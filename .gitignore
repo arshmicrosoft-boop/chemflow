@@ -109,3 +109,6 @@ env.yml
 **/*.ipynb_checkpoints/
 
 .database/
+# ChemFlow local environment and research sessions
+.venv/
+sessions/

@@ -1,0 +1,23 @@
+{
+  "objective": {
+    "name": "Aqueous solubility",
+    "question": "Can aqueous solubility be predicted reliably for unseen chemical scaffolds, and which structural features are associated with it?",
+    "dataset": "datasets/delaney-processed.csv",
+    "smiles_column": "smiles",
+    "target_column": "measured log solubility in mols per litre",
+    "task": "regression",
+    "primary_metric": "r2",
+    "success_threshold": 0.7,
+    "desirable_direction": "high",
+    "candidates": "examples/chemflow/solubility_candidates.csv"
+  },
+  "sandbox": {
+    "assay_budget": 150,
+    "assay_batch_size": 25,
+    "max_cycles_per_run": 40,
+    "max_runtime_seconds": 900,
+    "max_experiment_seconds": 180,
+    "max_holdout_evaluations": 12,
+    "seed": 0
+  }
+}
