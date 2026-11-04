@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 
 export const fmt = (x, digits = 3) => (x === null || x === undefined ? '—' : Number(x).toFixed(digits));
 
-const METRIC_LABELS = { rmse: 'RMSE', mae: 'MAE', r2: 'R²', roc_auc: 'ROC AUC' };
+const METRIC_LABELS = { rmse: 'RMSE', mae: 'MAE', r2: 'R²', roc_auc: 'ROC AUC', accuracy: 'Accuracy' };
 export const metricLabel = (m) => METRIC_LABELS[m] || m;
 
 const TERMS = {

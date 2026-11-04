@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
+import NewProjectForm from '../components/NewProjectForm.jsx';
 import { Budget, Glass, Notice, Panel, Stat, Status, fmt, kindLabel, metricLabel, pretty } from '../components/ui.jsx';
 
 const describeEvent = (e) => {
@@ -15,7 +16,7 @@ export default function Workspace() {
   const [results, setResults] = useState(null);
   const [hypotheses, setHypotheses] = useState([]);
   const [timeline, setTimeline] = useState([]);
-  const [newName, setNewName] = useState('');
+  const [creating, setCreating] = useState(false);
   const [running, setRunning] = useState(false);
   const [lastRun, setLastRun] = useState(null);
   const [error, setError] = useState(null);
@@ -48,17 +49,10 @@ export default function Workspace() {
 
   const select = (pid) => setParams({ project: pid });
 
-  const create = async (e) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    try {
-      const project = await api.createProject(newName.trim());
-      setNewName('');
-      await loadProjects();
-      select(project.id);
-    } catch (err) {
-      setError(err.message);
-    }
+  const created = async (project) => {
+    setCreating(false);
+    await loadProjects();
+    select(project.id);
   };
 
   const run = async () => {
@@ -88,15 +82,11 @@ export default function Workspace() {
 
       <Panel
         title="Projects"
-        action={(
-          <form onSubmit={create} className="flex gap-2 w-full sm:w-auto">
-            <input aria-label="Project name" value={newName} onChange={e => setNewName(e.target.value)} placeholder="New project name" className="field flex-1 min-w-0 sm:w-56" />
-            <button className="btn" disabled={!newName.trim()}>Create</button>
-          </form>
-        )}
+        action={!creating && <button className="btn" onClick={() => setCreating(true)}>New project</button>}
       >
+        {creating && <NewProjectForm onCreated={created} onCancel={() => setCreating(false)} />}
         {projects === null && !error && <div className="skeleton h-16" />}
-        {projects?.length === 0 && <p className="text-sm text-ink-2">No projects yet. Name one above to begin.</p>}
+        {projects?.length === 0 && !creating && <p className="text-sm text-ink-2">No projects yet. Create one to begin.</p>}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {projects?.map(p => (
             <button

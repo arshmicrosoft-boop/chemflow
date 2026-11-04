@@ -12,11 +12,14 @@ async function request(path, options) {
 export const api = {
   projects: () => request('/projects'),
   project: (id) => request(`/projects/${id}`),
-  createProject: (name) => request('/projects', {
+  createProject: (project) => request('/projects', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, objective: 'Aqueous solubility prediction', dataset: 'datasets/delaney-processed.csv' }),
+    body: JSON.stringify(project),
   }),
+  datasets: () => request('/datasets'),
+  dataset: (name) => request(`/datasets/info?name=${encodeURIComponent(name)}`),
+  uploadDataset: (file) => request(`/datasets?filename=${encodeURIComponent(file.name)}`, { method: 'POST', body: file }),
   results: (id) => request(`/projects/${id}/results`),
   hypotheses: (id) => request(`/projects/${id}/hypotheses`),
   timeline: (id) => request(`/projects/${id}/timeline`),

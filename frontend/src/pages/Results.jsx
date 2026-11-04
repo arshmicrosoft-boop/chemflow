@@ -34,7 +34,7 @@ function Hero({ project, results }) {
           <span className={`pill ${tone} mb-3`}><span aria-hidden="true">{icon}</span>{label}</span>
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{pretty(verdict.headline)}</h1>
           <p className="text-ink-2 mt-2 max-w-2xl">{pretty(verdict.detail)}</p>
-          <p className="text-sm text-ink-2 mt-3 max-w-2xl">{objective.question}</p>
+          {objective.question !== objective.name && <p className="text-sm text-ink-2 mt-3 max-w-2xl">{objective.question}</p>}
         </div>
         {champion && (
           <div className="plate p-5 lg:min-w-64">
