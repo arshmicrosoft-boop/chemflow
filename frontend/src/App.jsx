@@ -86,6 +86,7 @@ export default function App() {
           <Route path="/topics" element={<Topics />} />
           <Route path="/topics/:id" element={<Topics />} />
         </Routes>
+        <p className="text-center text-sm text-ink-2 mt-10">Made by Arsh and Shivang</p>
       </div>
       <ChatBar />
       </PasswordGate>
