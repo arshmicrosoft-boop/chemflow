@@ -1,194 +1,153 @@
-﻿<div align="center">
+﻿# ChemFlow
 
-# 🧪 ChemFlow
+### From AI that predicts scientific outcomes to AI that investigates scientific questions.
 
-<img src="https://raw.githubusercontent.com/deepchem/deepchem/master/docs/source/_static/logo.png" alt="ChemFlow Logo" width="180"/>
+**ChemFlow is an AI-powered scientific research system designed to investigate scientific problems through continuous cycles of hypothesis generation, computational experimentation, evaluation, and learning.**
 
-**A high quality open-source toolchain that democratizes the use of deep-learning in drug discovery, materials science, quantum chemistry, and biology.**
-
-[![Anaconda-Server Badge](https://anaconda.org/conda-forge/deepchem/badges/version.svg)](https://anaconda.org/conda-forge/deepchem)
-[![PyPI version](https://badge.fury.io/py/deepchem.svg)](https://pypi.org/project/deepchem/)
-[![Documentation Status](https://readthedocs.org/projects/deepchem/badge/?version=latest)](https://deepchem.readthedocs.io/en/latest/?badge=latest)
-[![Test for DeepChem Core](https://github.com/deepchem/deepchem/workflows/Test%20for%20DeepChem%20Core/badge.svg)](https://github.com/deepchem/deepchem/actions?query=workflow%3A%22Test+for+DeepChem+Core%22)
-[![Test for documents](https://github.com/deepchem/deepchem/workflows/Test%20for%20documents/badge.svg)](https://github.com/deepchem/deepchem/actions?query=workflow%3A%22Test+for+documents%22)
-[![Test for build scripts](https://github.com/deepchem/deepchem/workflows/Test%20for%20build%20scripts/badge.svg)](https://github.com/deepchem/deepchem/actions?query=workflow%3A%22Test+for+build+scripts%22)
-[![codecov](https://codecov.io/gh/deepchem/deepchem/branch/master/graph/badge.svg?token=5rOZB2BY3h)](https://codecov.io/gh/deepchem/deepchem)
-
-[🌐 Website](https://deepchem.io/) · [📖 Documentation](https://deepchem.readthedocs.io/en/latest/) · [🎓 Colab Tutorial](https://github.com/deepchem/deepchem/tree/master/examples/tutorials) · [💬 Discussion Forum](https://forum.deepchem.io/) · [🎮 Discord](https://discord.gg/cGzwCdrUqS) · [📋 Model Wishlist](https://github.com/deepchem/deepchem/issues/2680) · [📚 Tutorial Wishlist](https://github.com/deepchem/deepchem/issues/2907)
-
-</div>
+What if AI could do more than answer scientific questions? What if it could investigate them?
 
 ---
 
-## 📑 Table of Contents
+## 1. The Problem
 
-- [Requirements](#requirements)
-- [Installation](#installation)
-  - [Stable version](#stable-version)
-  - [Nightly build version](#nightly-build-version)
-  - [Docker](#docker)
-  - [From source](#from-source)
-  - [From source lightweight](#from-source-lightweight)
-- [Getting Started](#getting-started)
-  - [Discord](#discord)
-- [About Us](#about-us)
-- [Contributing to DeepChem](/CONTRIBUTING.md)
-- [Citing DeepChem](#citing-deepchem)
+Scientific discovery is a long and resource-intensive process.
+
+Researchers often have to:
+
+- Explore numerous possible explanations.
+- Design and conduct experiments.
+- Analyse results and identify patterns.
+- Learn from unsuccessful experiments.
+- Repeat the process until reliable evidence emerges.
+
+Traditional AI can help predict outcomes and analyse data. But making a prediction is only one part of scientific research.
+
+**The bigger opportunity is to build AI systems that can participate in the investigative process itself.**
+
+## 2. Our Concept
+
+ChemFlow explores a new approach: an AI research agent that can investigate a scientific objective over multiple research cycles.
+
+Instead of simply receiving a question and returning an answer, ChemFlow works through a continuous research process:
+
+```mermaid
+flowchart TD
+    A["Scientific Objective"] --> B["Generate Hypotheses"]
+    B --> C["Identify Knowledge Gaps"]
+    C --> D["Select an Experiment"]
+    D --> E["Run Computational Experiments"]
+    E --> F["Evaluate Evidence"]
+    F --> G["Learn From Validated Results"]
+    G --> H["Update Research Memory"]
+    H --> B
+```
+
+Each cycle builds on previous work, allowing the system to continue investigating rather than starting from scratch.
+
+## 3. Our Objective
+
+Our objective is to develop an AI system that can:
+
+- **Investigate:** Break down scientific objectives into testable hypotheses.
+- **Experiment:** Run computational experiments to evaluate those hypotheses.
+- **Evaluate:** Compare outcomes against evidence instead of accepting every prediction.
+- **Learn:** Improve its research models using validated information.
+- **Remember:** Preserve previous hypotheses, experiments, findings, and failures.
+- **Continue:** Identify unanswered questions and decide what to investigate next.
+
+The long-term goal is to make scientific investigation more systematic, iterative, and accessible.
+
+## 4. What Makes ChemFlow Innovative?
+
+### 1. From answering to investigating
+
+Most conventional AI interactions are centred around individual prompts and responses.
+
+ChemFlow is designed around an ongoing research process. It doesn't just produce an output; it uses results to guide its next investigation.
+
+### 2. Persistent research memory
+
+Research does not have to restart with every session.
+
+ChemFlow maintains records of previous experiments, hypotheses, findings, failures, and approvals. It can resume earlier research and build on what has already been learned.
+
+### 3. Evidence-driven conclusions
+
+A prediction should not automatically become a scientific finding.
+
+ChemFlow evaluates results against evidence, uses independent validation, and distinguishes between validated, provisional, inconclusive, and rejected findings.
+
+### 4. Intelligent experiment selection
+
+Not every experiment is equally useful.
+
+ChemFlow evaluates possible experiments and selects what to investigate next, considering expected improvement, exploration, and available computational budgets.
+
+### 5. Learning through investigation
+
+Validated results can be used to update and improve the system's research models. Model versions and regression checks help ensure that improvements do not silently reduce performance.
+
+**The central innovation is combining AI-driven experimentation, persistent memory, evidence evaluation, and iterative learning into one research workflow.**
+
+## 5. Practical Applications
+
+ChemFlow's current research prototype focuses on computational molecular solubility research. The broader architecture could potentially support several scientific domains.
+
+| Field               | Potential application                                                                     |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Drug discovery      | Investigating molecular properties and identifying promising candidates for further study |
+| Chemistry           | Exploring relationships between molecular structures and their properties                 |
+| Materials science   | Investigating properties of candidate materials                                           |
+| Biology             | Analysing biological datasets and exploring scientific hypotheses                         |
+| Scientific research | Automating parts of repetitive computational investigation                                |
+
+These are potential directions for future development, not claims that ChemFlow currently performs all these tasks.
+
+## 6. What We Have Built
+
+ChemFlow is built as a research layer on top of **DeepChem**, an open-source machine-learning toolkit for scientific applications.
+
+Our current prototype includes:
+
+- **Research Agent:** Coordinates repeated research cycles.
+- **Hypothesis Engine:** Generates research hypotheses using available evidence.
+- **Experiment Engine:** Runs computational experiments using scientific machine-learning models.
+- **Evaluation Engine:** Evaluates hypotheses and experimental results.
+- **Persistent Memory:** Stores research history and allows sessions to resume.
+- **Learning Engine:** Updates versioned models using validated data.
+- **Scientific Sandbox:** Enforces dataset boundaries, experiment budgets, reproducibility requirements, and approval rules.
+- **Results Interface:** Presents research findings, model comparisons, experiment logs, and reports through a web application.
+
+Our initial demonstration uses molecular solubility prediction as a practical scientific research problem.
+
+## 7. Responsible Scientific Research
+
+Scientific AI must be reliable, not just autonomous.
+
+ChemFlow is designed with safeguards:
+
+- Experiments are computational, not physical laboratory experiments.
+- Findings require supporting evidence and independent validation.
+- Failed and inconclusive experiments are recorded.
+- Dataset boundaries and computational budgets are enforced.
+- Physical laboratory work requires human approval.
+
+ChemFlow is a research prototype, not a replacement for scientists or experimental laboratory validation.
+
+## 8. Our Vision
+
+We believe the next major step in scientific AI is not simply making models better at answering questions.
+
+It is making AI better at investigating questions.
+
+Imagine a future where researchers can provide a scientific objective, and an AI research system can explore possibilities, test hypotheses computationally, evaluate evidence, remember what it discovers, and identify the next meaningful question.
+
+**ChemFlow is an early step towards that vision.**
 
 ---
 
-## 📋 Requirements
+### The Idea in One Sentence
 
-DeepChem currently supports Python 3.7 through 3.10 and requires these packages on any condition.
+**ChemFlow aims to move AI from being a tool that predicts scientific outcomes to a system that continuously investigates how and why those outcomes occur.**
 
-- [joblib](https://pypi.python.org/pypi/joblib)
-- [NumPy](https://numpy.org/)
-- [pandas](http://pandas.pydata.org/)
-- [scikit-learn](https://scikit-learn.org/stable/)
-- [SciPy](https://www.scipy.org/)
-- [rdkit](https://www.rdkit.org/)
-
-### 🧩 Soft Requirements
-
-DeepChem has a number of "soft" requirements. If you face some errors like `ImportError: This class requires XXXX`, you may need to install some packages.
-
-Please check [the document](https://deepchem.readthedocs.io/en/latest/requirements.html#soft-requirements) about soft requirements.
-
----
-
-## 📦 Installation
-
-### Stable version
-
-DeepChem stable version can be installed using pip or conda as
-
-```bash
-pip install deepchem
-```
-
-or
-
-```bash
-conda install -c conda-forge deepchem
-```
-
-Deepchem provides support for tensorflow, pytorch, jax and each require a individual pip Installation.
-
-For using models with tensorflow dependencies, you install using
-
-```bash
-pip install deepchem[tensorflow]
-```
-
-For using models with torch dependencies, you install using
-
-```bash
-pip install deepchem[torch]
-```
-
-For using models with jax dependencies, you install using
-
-```bash
-pip install deepchem[jax]
-```
-
-If GPU support is required, then make sure CUDA is installed and then install the desired deep learning framework using the links below before installing deepchem
-
-1. tensorflow - just cuda installed
-2. pytorch - https://pytorch.org/get-started/locally/#start-locally
-3. jax - https://github.com/google/jax#pip-installation-gpu-cuda
-
-In `zsh` square brackets are used for globbing/pattern matching. This means you need to escape the square brackets in the above installation. You can do so by including the dependencies in quotes like `pip install --pre 'deepchem[jax]'`
-
-### Nightly build version
-
-The nightly version is built by the HEAD of DeepChem. It can be installed using
-
-```bash
-pip install --pre deepchem
-```
-
-### Docker
-
-If you want to install deepchem using a docker, you can pull two kinds of images. DockerHub : https://hub.docker.com/repository/docker/deepchemio/deepchem
-
-- `deepchemio/deepchem:x.x.x`
-  - Image built by using a conda (x.x.x is a version of deepchem)
-  - The x.x.x image is built when we push x.x.x. tag
-  - Dockerfile is put in `docker/tag` directory
-- `deepchemio/deepchem:latest`
-  - Image built from source codes
-  - The latest image is built every time we commit to the master branch
-  - Dockerfile is put in `docker/nightly` directory
-
-You pull the image like this.
-
-```bash
-docker pull deepchemio/deepchem:2.4.0
-```
-
-If you want to know docker usages with deepchem in more detail, please check [the document](https://deepchem.readthedocs.io/en/latest/installation.html#docker).
-
-### From source
-
-If you try install all soft dependencies at once or contribute to deepchem, we recommend you should install deepchem from source.
-
-Please check [this introduction](https://deepchem.readthedocs.io/en/latest/installation.html#from-source-with-conda).
-
-### From source lightweight
-
-For a lightweight installation from source, refer to the [installation guide](https://deepchem.readthedocs.io/en/latest/installation.html).
-
----
-
-## 🚀 Getting Started
-
-The DeepChem project maintains an extensive collection of [tutorials](https://github.com/deepchem/deepchem/tree/master/examples/tutorials). All tutorials are designed to be run on Google colab (or locally if you prefer). Tutorials are arranged in a suggested learning sequence which will take you from beginner to proficient at molecular machine learning and computational biology more broadly.
-
-After working through the tutorials, you can also go through other [examples](https://github.com/deepchem/deepchem/tree/master/examples). To apply `deepchem` to a new problem, try starting from one of the existing examples or tutorials and modifying it step by step to work with your new use-case. If you have questions or comments you can raise them on our [gitter](https://gitter.im/deepchem/Lobby).
-
-### Supported Integrations
-
-- [Weights & Biases](https://docs.wandb.ai/guides/integrations/other/deepchem): Track your DeepChem model's training and evaluation metrics.
-
-### Discord
-
-The DeepChem [Discord](https://discord.gg/cGzwCdrUqS) hosts a number of scientists, developers, and enthusiasts interested in deep learning for the life sciences. Probably the easiest place to ask simple questions or float requests for new features.
-
----
-
-## 👥 About Us
-
-DeepChem is managed by a team of open source contributors. Anyone is free to join and contribute!
-
----
-
-## 🤝 Contributing to DeepChem
-
-See [CONTRIBUTING.md](/CONTRIBUTING.md) for guidelines.
-
----
-
-## 📚 Citing DeepChem
-
-If you have used DeepChem in the course of your research, we ask that you cite the "Deep Learning for the Life Sciences" book by the DeepChem core team.
-
-To cite this book, please use this bibtex entry:
-
-```bibtex
-@book{Ramsundar-et-al-2019,
-    title={Deep Learning for the Life Sciences},
-    author={Bharath Ramsundar and Peter Eastman and Patrick Walters and Vijay Pande and Karl Leswing and Zhenqin Wu},
-    publisher={O'Reilly Media},
-    note={\url{https://www.amazon.com/Deep-Learning-Life-Sciences-Microscopy/dp/1492039837}},
-    year={2019}
-}
-```
-
----
-
-<div align="center">
-
-Made with ❤️ by the DeepChem / ChemFlow community · [⭐ Star us on GitHub](https://github.com/deepchem/deepchem)
-
-</div>
+[View the source code](https://github.com/arshmicrosoft-boop/chemflow)
