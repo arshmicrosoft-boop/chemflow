@@ -44,10 +44,10 @@ function Report({ text, sources }) {
 
 function SetupSteps({ onCheck }) {
   return (
-    <Panel title="Add your API key to start" hint="Topic research uses Claude and web search, which need a key of your own.">
+    <Panel title="Add your API key to start" hint="Topic research uses an AI model, which needs a key of your own.">
       <ol className="list-decimal pl-5 space-y-2 text-sm text-ink-2">
-        <li>Create a key at <a className="font-semibold" style={{ color: 'var(--accent)' }} href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a>. Using it costs money, so add credits there first.</li>
-        <li>Open <code>backend/.env</code> in the project folder and paste the key after <code>ANTHROPIC_API_KEY=</code>, then save.</li>
+        <li>Create a key at <a className="font-semibold" style={{ color: 'var(--accent)' }} href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">OpenRouter</a> or <a className="font-semibold" style={{ color: 'var(--accent)' }} href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">Anthropic</a>. Using it costs money, so add credits there first.</li>
+        <li>Open <code>backend/.env</code> in the project folder and paste the key after <code>OPENROUTER_API_KEY=</code> or <code>ANTHROPIC_API_KEY=</code>, then save.</li>
         <li>Never paste the key into a chat or commit it. That file stays on your computer.</li>
       </ol>
       <button className="btn mt-4" onClick={onCheck}>I've added it</button>
@@ -98,7 +98,7 @@ export default function Topics() {
       <header className="rise pt-2 pb-3">
         <TechText text="ChemFlow // AI web research" className="text-xs text-ink-2" />
         <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mt-1">Topic research</h1>
-        <p className="text-ink-2 mt-2 max-w-2xl">Give Claude a topic and it searches the web and writes a report with its sources. For testing models on your own measurements, use the <Link to="/" className="font-semibold" style={{ color: 'var(--accent)' }}>workspace</Link>.</p>
+        <p className="text-ink-2 mt-2 max-w-2xl">Give the AI a topic and it finds sources and writes a report that cites them. For testing models on your own measurements, use the <Link to="/" className="font-semibold" style={{ color: 'var(--accent)' }}>workspace</Link>.</p>
       </header>
 
       {error && <Notice tone="bad" title="ChemFlow hit a problem">{error}</Notice>}
@@ -110,12 +110,12 @@ export default function Topics() {
             <input aria-label="Research topic" className="field flex-1 min-w-0" maxLength={500} value={topic} onChange={e => setTopic(e.target.value)} placeholder="What limits solid-state lithium battery electrolytes?" disabled={busy} />
             <button className="btn btn-primary" disabled={busy || !topic.trim()}>{busy ? 'Researching…' : 'Research'}</button>
           </form>
-          <p className="text-xs text-ink-2 mt-2">{busy ? 'This usually takes a few minutes. Keep this page open.' : 'Each report uses your API credits.'}</p>
+          <p className="text-xs text-ink-2 mt-2">{busy ? 'This can take a few minutes. Keep this page open.' : status.provider === 'openrouter' ? 'Uses free models and free paper databases, so reports cost nothing. Free models have daily limits.' : 'Each report uses your API credits.'}</p>
         </Glass>
       )}
 
       {report && (
-        <Panel title={report.topic} hint={`${report.searches} web searches · ${report.sources.length} sources · ${report.created_at} UTC`}>
+        <Panel title={report.topic} hint={`${report.searches ? `${report.searches} web searches · ` : ''}${report.sources.length} sources · ${report.model} · ${report.created_at} UTC`}>
           {report.sources.length === 0 && <p className="text-sm mb-3" style={{ color: 'var(--warn)' }}>This report cites no sources, so treat it as unverified.</p>}
           {report.search_errors.length > 0 && <p className="text-sm mb-3" style={{ color: 'var(--warn)' }}>Some web searches failed, so this report may be incomplete.</p>}
           <div className="plate p-4 sm:p-5">

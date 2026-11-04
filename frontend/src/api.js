@@ -1,13 +1,28 @@
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-async function request(path, options) {
-  const res = await fetch(`${API}${path}`, options);
+const PASSWORD_KEY = 'chemflow-password';
+export const PASSWORD_REQUIRED = 'Password required';
+
+export function savePassword(password) {
+  try { sessionStorage.setItem(PASSWORD_KEY, password); } catch { /* asked again next load */ }
+}
+
+function withPassword(options = {}) {
+  let password = '';
+  try { password = sessionStorage.getItem(PASSWORD_KEY) || ''; } catch { /* storage may be blocked */ }
+  return { ...options, headers: { ...options.headers, 'X-App-Password': password } };
+}
+
+async function send(path, options) {
+  const res = await fetch(`${API}${path}`, withPassword(options));
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || `Request failed (${res.status})`);
   }
-  return res.json();
+  return res;
 }
+
+const request = (path, options) => send(path, options).then(res => res.json());
 
 export const api = {
   projects: () => request('/projects'),
@@ -32,5 +47,5 @@ export const api = {
   hypotheses: (id) => request(`/projects/${id}/hypotheses`),
   timeline: (id) => request(`/projects/${id}/timeline`),
   run: (id, cycles = 5) => request(`/projects/${id}/run?cycles=${cycles}`, { method: 'POST' }),
-  reportUrl: (id) => `${API}/projects/${id}/report`,
+  report: (id) => send(`/projects/${id}/report`).then(res => res.blob()),
 };

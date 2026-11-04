@@ -4,6 +4,7 @@ import Workspace from './pages/Workspace.jsx';
 import Results from './pages/Results.jsx';
 import Topics from './pages/Topics.jsx';
 import { ElectricLogo } from './components/flair.jsx';
+import PasswordGate from './components/PasswordGate.jsx';
 
 function useTheme() {
   const [dark, setDark] = useState(() => {
@@ -75,6 +76,7 @@ export default function App() {
           <feDisplacementMap in="SourceGraphic" in2="soft" scale="48" xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </svg>
+      <PasswordGate>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
         <Nav dark={dark} onTheme={setDark} />
         <Routes>
@@ -84,6 +86,7 @@ export default function App() {
           <Route path="/topics/:id" element={<Topics />} />
         </Routes>
       </div>
+      </PasswordGate>
     </>
   );
 }

@@ -1,0 +1,15 @@
+# Render blueprint for the ChemFlow API. Secrets are entered in Render's
+# dashboard (sync: false), never stored here.
+services:
+  - type: web
+    name: chemflow-api
+    runtime: docker
+    dockerfilePath: ./docker/backend.Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: nvidia/nemotron-3.5-lightning:free

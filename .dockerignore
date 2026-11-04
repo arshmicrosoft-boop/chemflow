@@ -1,0 +1,12 @@
+.git
+.venv
+.env
+**/.env
+**/node_modules
+**/__pycache__
+sessions
+chemflow.db
+frontend/dist
+examples
+docs
+contrib

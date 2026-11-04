@@ -17,11 +17,13 @@
 ### Frontend (`frontend/`)
 - React + Vite + React Router + Tailwind CSS (compiled via PostCSS)
 - Pages: Workspace (`/`) and Results (`/projects/:id/results`: verdict, model leaderboard, structure effects, findings, experiment log)
-- Topic research (`/topics`): `backend/app/topic_research.py` has Claude search the web and write a cited report. Needs `ANTHROPIC_API_KEY` in `backend/.env` (see `backend/.env.example`). It is separate from the sandboxed engine and its claims are not validated by it
+- Topic research (`/topics`): `backend/app/topic_research.py` has an AI model write a cited report. With an Anthropic key Claude searches the web; with an OpenRouter key only free models are used, with papers from OpenAlex and Europe PMC as sources, because OpenRouter charges for web search even on free models. Needs `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` in `backend/.env` (see `backend/.env.example`). It is separate from the sandboxed engine and its claims are not validated by it
 - Liquid glass styling lives in `src/index.css`; refraction uses an SVG backdrop filter on Chromium and falls back to blur elsewhere
 - All values fetched from `/projects/*` endpoints
 
 ### Deployment
+- Backend on Render (`render.yaml`, `docker/backend.Dockerfile`); frontend on Vercel (`frontend/vercel.json`, with `VITE_API_URL` set to the Render address)
+- Set `APP_PASSWORD` and `ALLOWED_ORIGINS` when hosting. Render's free plan has no disk, so projects and reports are lost on restart
 - `docker-compose.yml`: backend (8000) + frontend (3000)
 - `docker/backend.Dockerfile`: Python 3.11 with backend requirements
 - `docker/frontend.Dockerfile`: Node 20 build + Vite preview

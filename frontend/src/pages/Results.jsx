@@ -287,6 +287,16 @@ export default function Results() {
       .catch(e => setError(e.message));
   }, [id]);
 
+  const openReport = async () => {
+    const tab = window.open('', '_blank');
+    try {
+      tab.location = URL.createObjectURL(await api.report(id));
+    } catch (e) {
+      tab?.close();
+      setError(e.message);
+    }
+  };
+
   if (error) {
     return <Notice tone="bad" title="Could not load these results" action={<Link className="btn" to="/">Back to workspace</Link>}>{error}</Notice>;
   }
@@ -297,7 +307,7 @@ export default function Results() {
       <Hero project={project} results={results} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented label="Result sections" options={TABS} value={tab} onChange={setTab} />
-        <a className="btn" href={api.reportUrl(id)} target="_blank" rel="noreferrer">Full report</a>
+        <button className="btn" onClick={openReport}>Full report</button>
       </div>
       <View key={tab} results={results} />
     </main>

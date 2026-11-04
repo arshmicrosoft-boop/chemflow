@@ -328,7 +328,8 @@ def _topic_report(row) -> Dict[str, Any]:
 
 @router.get("/topics/status")
 async def topics_status():
-    return {"configured": topic_research.api_key_configured(), "model": topic_research.MODEL}
+    provider = topic_research.active_provider()
+    return {"configured": provider is not None, "provider": provider, "model": topic_research.active_model()}
 
 @router.get("/topics")
 async def list_topics():
