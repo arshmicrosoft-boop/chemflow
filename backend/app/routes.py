@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-import os, json, time
+import io, os, json, re, time
+import pandas as pd
 
 router = APIRouter()
 
@@ -11,13 +12,26 @@ import sys
 sys.path.insert(0, "/workspaces/project/chemflow")
 from chemflow.agent import CONFIG_FILE, MEMORY_FILE, ResearchAgent
 from chemflow.config import SessionConfig
+from chemflow.data import valid_smiles
 from chemflow.memory import ResearchMemory
 from chemflow.reporting import build_report, build_results
+
+DATASETS_DIR = "datasets"
+UPLOADS_FOLDER = "uploads"
+DATASET_SUFFIXES = (".csv", ".csv.gz")
+DATASET_PREVIEW_ROWS = 2000
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 class ProjectCreate(BaseModel):
     name: str
     objective: str
     dataset: str = "datasets/delaney-processed.csv"
+    question: Optional[str] = None
+    smiles_column: str = "smiles"
+    target_column: str = "measured log solubility in mols per litre"
+    task: str = "regression"
+    primary_metric: str = "rmse"
+    success_threshold: float = 0.75
 
 class ProjectResponse(BaseModel):
     id: int
@@ -33,14 +47,102 @@ _sessions: Dict[int, ResearchAgent] = {}
 async def health():
     return {"status": "ok", "service": "chemflow-api"}
 
+def _dataset_path(name: str) -> str:
+    """Resolve a dataset name, keeping it inside the datasets folder."""
+    root = os.path.abspath(DATASETS_DIR)
+    path = os.path.abspath(os.path.join(root, name.replace("\\", "/").removeprefix("datasets/")))
+    if not path.startswith(root + os.sep) or not path.endswith(DATASET_SUFFIXES):
+        raise HTTPException(status_code=400, detail="Datasets must be CSV files in the datasets folder")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Dataset not found: %s" % name)
+    return path
+
+def _column_kind(values: pd.Series) -> str:
+    numbers = pd.to_numeric(values.dropna(), errors="coerce")
+    if len(numbers) == 0 or numbers.isna().any():
+        return "text"
+    return "binary" if set(numbers.unique()) <= {0, 1} else "numeric"
+
+def _smiles_share(values: pd.Series) -> float:
+    sample = values.dropna().astype(str).head(50)
+    return sum(valid_smiles(s) for s in sample) / max(1, len(sample))
+
+def _describe_dataset(name: str) -> Dict[str, Any]:
+    df = pd.read_csv(_dataset_path(name), nrows=DATASET_PREVIEW_ROWS)
+    columns = [{"name": c, "kind": _column_kind(df[c])} for c in df.columns]
+    text = [c["name"] for c in columns if c["kind"] == "text"]
+    shares = {c: _smiles_share(df[c]) for c in text}
+    best = max(shares, key=shares.get, default=None)
+    return {
+        "name": name,
+        "rows": len(df),
+        "rows_capped": len(df) == DATASET_PREVIEW_ROWS,
+        "columns": columns,
+        "smiles_column": best if best and shares[best] >= 0.5 else None,
+    }
+
+def _check_objective(p: ProjectCreate, path: str) -> None:
+    """Refuse settings that would leave a project that cannot run."""
+    if not p.name.strip():
+        raise HTTPException(status_code=400, detail="Give the project a name")
+    columns = list(pd.read_csv(path, nrows=0).columns)
+    for column in (p.smiles_column, p.target_column):
+        if column not in columns:
+            raise HTTPException(status_code=400, detail="Column %r is not in this dataset" % column)
+    if p.smiles_column == p.target_column:
+        raise HTTPException(status_code=400, detail="The molecule and target columns must be different")
+    kind = _column_kind(pd.read_csv(path, usecols=[p.target_column])[p.target_column])
+    if kind == "text":
+        raise HTTPException(status_code=400, detail="Target column %r must contain numbers" % p.target_column)
+    if p.task == "classification" and kind != "binary":
+        raise HTTPException(status_code=400, detail="Classification needs a target column of only 0 and 1")
+
+@router.get("/datasets")
+async def list_datasets():
+    names = []
+    for folder, _, files in os.walk(DATASETS_DIR):
+        for f in files:
+            if f.endswith(DATASET_SUFFIXES):
+                names.append(os.path.relpath(os.path.join(folder, f), DATASETS_DIR).replace(os.sep, "/"))
+    return sorted(names)
+
+@router.get("/datasets/info")
+async def dataset_info(name: str):
+    return _describe_dataset(name)
+
+@router.post("/datasets")
+async def upload_dataset(filename: str, request: Request):
+    body = await request.body()
+    if len(body) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Datasets can be at most 100 MB")
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.basename(filename.replace("\\", "/")))
+    if not stem.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Upload a .csv file")
+    try:
+        pd.read_csv(io.BytesIO(body), nrows=5)
+    except (ValueError, pd.errors.ParserError, UnicodeDecodeError):
+        raise HTTPException(status_code=400, detail="This file could not be read as a CSV")
+    folder = os.path.join(DATASETS_DIR, UPLOADS_FOLDER)
+    os.makedirs(folder, exist_ok=True)
+    base, n = stem[:-4], 1
+    while os.path.exists(os.path.join(folder, stem)):
+        n += 1
+        stem = "%s_%d.csv" % (base, n)
+    with open(os.path.join(folder, stem), "wb") as f:
+        f.write(body)
+    return _describe_dataset("%s/%s" % (UPLOADS_FOLDER, stem))
+
 @router.post("/projects", response_model=ProjectResponse)
 async def create_project(p: ProjectCreate):
-    import sqlite3
+    import sqlite3, shutil
+    dataset_path = _dataset_path(p.dataset)
+    _check_objective(p, dataset_path)
+    dataset = os.path.relpath(dataset_path).replace(os.sep, "/")
     conn = sqlite3.connect("chemflow.db")
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO projects (name, objective, dataset) VALUES (?, ?, ?)",
-        (p.name, p.objective, p.dataset),
+        (p.name, p.objective, dataset),
     )
     pid = cursor.lastrowid
     conn.commit()
@@ -59,13 +161,13 @@ async def create_project(p: ProjectCreate):
     cfg = {
         "objective": {
             "name": p.objective,
-            "question": "Predict aqueous solubility from molecular structure",
-            "dataset": p.dataset,
-            "smiles_column": "smiles",
-            "target_column": "measured log solubility in mols per litre",
-            "task": "regression",
-            "primary_metric": "rmse",
-            "success_threshold": 0.75,
+            "question": p.question or p.objective,
+            "dataset": dataset,
+            "smiles_column": p.smiles_column,
+            "target_column": p.target_column,
+            "task": p.task,
+            "primary_metric": p.primary_metric,
+            "success_threshold": p.success_threshold,
             "desirable_direction": "high",
         },
         "sandbox": {
@@ -79,9 +181,22 @@ async def create_project(p: ProjectCreate):
     tmp_cfg = tempfile.mktemp(suffix=".json", dir=session_dir)
     with open(tmp_cfg, "w") as f:
         json.dump(cfg, f)
-    agent = ResearchAgent.create(session_dir, SessionConfig.from_json(tmp_cfg))
+    agent, failure = None, None
+    try:
+        agent = ResearchAgent.create(session_dir, SessionConfig.from_json(tmp_cfg))
+    except ValueError as e:
+        failure = str(e)
+    if failure:
+        # Outside the except block: its traceback keeps the session's database
+        # open, and Windows cannot delete an open file.
+        conn = sqlite3.connect("chemflow.db")
+        conn.execute("DELETE FROM projects WHERE id = ?", (pid,))
+        conn.commit()
+        conn.close()
+        shutil.rmtree(session_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail=failure)
     agent.close()
-    return ProjectResponse(id=pid, name=p.name, objective=p.objective, dataset=p.dataset, active=1)
+    return ProjectResponse(id=pid, name=p.name, objective=p.objective, dataset=dataset, active=1)
 
 @router.get("/projects", response_model=List[ProjectResponse])
 async def list_projects():
@@ -208,6 +323,8 @@ async def explain():
         "what_is_real": "Experiments use actual DeepChem featurizers and sklearn models. Results are real predictions, not mocked.",
         "budget_enforced": "Sandbox limits experiments (max_experiments_total=50), assay budget (100), runtime limits, and locks holdout labels",
         "endpoints": {
+            "/datasets": "List CSV datasets, or upload one",
+            "/datasets/info": "Columns of a dataset and which one holds the molecules",
             "/projects": "Create and list research projects",
             "/projects/{id}/status": "Current agent state (cycle, experiments, champion model, budget remaining)",
             "/projects/{id}/run": "Run autonomous research cycles with real model execution",

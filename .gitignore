@@ -116,3 +116,4 @@ sessions/
 # ChemFlow web app
 chemflow.db
 node_modules/
+datasets/uploads/

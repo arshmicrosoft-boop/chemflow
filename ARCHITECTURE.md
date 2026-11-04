@@ -10,7 +10,8 @@
 ### Backend (`backend/app/`)
 - `main.py`: FastAPI server with CORS
 - `database.py`: SQLite `projects` and `settings` tables
-- `routes.py`: REST endpoints for projects, status, run, hypotheses, experiments, timeline, results, report, knowledge, health
+- `routes.py`: REST endpoints for datasets (list, inspect, upload), projects, status, run, hypotheses, experiments, timeline, results, report, knowledge, health
+- New projects are checked against their dataset before anything is created; uploads go to `datasets/uploads/`
 - Uses existing `ResearchAgent` directly (no mocked science)
 
 ### Frontend (`frontend/`)
