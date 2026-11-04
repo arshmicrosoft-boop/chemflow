@@ -112,3 +112,7 @@ env.yml
 # ChemFlow local environment and research sessions
 .venv/
 sessions/
+
+# ChemFlow web app
+chemflow.db
+node_modules/
