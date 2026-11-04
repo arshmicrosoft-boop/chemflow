@@ -5,3 +5,5 @@ python-multipart
 pandas
 numpy
 sqlite3
+anthropic
+python-dotenv

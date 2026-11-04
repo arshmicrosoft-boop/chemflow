@@ -17,6 +17,7 @@
 ### Frontend (`frontend/`)
 - React + Vite + React Router + Tailwind CSS (compiled via PostCSS)
 - Pages: Workspace (`/`) and Results (`/projects/:id/results`: verdict, model leaderboard, structure effects, findings, experiment log)
+- Topic research (`/topics`): `backend/app/topic_research.py` has Claude search the web and write a cited report. Needs `ANTHROPIC_API_KEY` in `backend/.env` (see `backend/.env.example`). It is separate from the sandboxed engine and its claims are not validated by it
 - Liquid glass styling lives in `src/index.css`; refraction uses an SVG backdrop filter on Chromium and falls back to blur elsewhere
 - All values fetched from `/projects/*` endpoints
 

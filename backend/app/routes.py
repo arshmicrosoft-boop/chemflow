@@ -15,12 +15,14 @@ from chemflow.config import SessionConfig
 from chemflow.data import valid_smiles
 from chemflow.memory import ResearchMemory
 from chemflow.reporting import build_report, build_results
+from . import topic_research
 
 DATASETS_DIR = "datasets"
 UPLOADS_FOLDER = "uploads"
 DATASET_SUFFIXES = (".csv", ".csv.gz")
 DATASET_PREVIEW_ROWS = 2000
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+MAX_TOPIC_CHARS = 500
 
 class ProjectCreate(BaseModel):
     name: str
@@ -315,6 +317,63 @@ async def get_report(pid: int):
     memory.close()
     return report
 
+class TopicRequest(BaseModel):
+    topic: str
+
+def _topic_report(row) -> Dict[str, Any]:
+    report = dict(row)
+    report["sources"] = json.loads(report["sources"])
+    report["search_errors"] = json.loads(report["search_errors"])
+    return report
+
+@router.get("/topics/status")
+async def topics_status():
+    return {"configured": topic_research.api_key_configured(), "model": topic_research.MODEL}
+
+@router.get("/topics")
+async def list_topics():
+    import sqlite3
+    conn = sqlite3.connect("chemflow.db")
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT id, topic, created_at FROM topic_reports ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+@router.get("/topics/{tid}")
+async def get_topic(tid: int):
+    import sqlite3
+    conn = sqlite3.connect("chemflow.db")
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT * FROM topic_reports WHERE id = ?", (tid,)).fetchone()
+    conn.close()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return _topic_report(row)
+
+# A plain def: research takes minutes, and FastAPI runs these in a worker
+# thread so the rest of the app keeps responding.
+@router.post("/topics")
+def create_topic(t: TopicRequest):
+    import sqlite3
+    topic = t.topic.strip()
+    if not topic or len(topic) > MAX_TOPIC_CHARS:
+        raise HTTPException(status_code=400, detail="Enter a topic of up to %d characters" % MAX_TOPIC_CHARS)
+    try:
+        result = topic_research.research(topic)
+    except topic_research.ResearchError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+    conn = sqlite3.connect("chemflow.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.execute(
+        "INSERT INTO topic_reports (topic, report, sources, searches, search_errors, model) VALUES (?, ?, ?, ?, ?, ?)",
+        (topic, result["report"], json.dumps(result["sources"]), result["searches"],
+         json.dumps(result["search_errors"]), result["model"]),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM topic_reports WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    conn.close()
+    return _topic_report(row)
+
 @router.get("/explain")
 async def explain():
     return {
@@ -323,6 +382,7 @@ async def explain():
         "what_is_real": "Experiments use actual DeepChem featurizers and sklearn models. Results are real predictions, not mocked.",
         "budget_enforced": "Sandbox limits experiments (max_experiments_total=50), assay budget (100), runtime limits, and locks holdout labels",
         "endpoints": {
+            "/topics": "AI research on a written topic, using web search (needs an API key)",
             "/datasets": "List CSV datasets, or upload one",
             "/datasets/info": "Columns of a dataset and which one holds the molecules",
             "/projects": "Create and list research projects",

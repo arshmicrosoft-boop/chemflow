@@ -15,6 +15,17 @@ def init_db():
         active INTEGER DEFAULT 1
     )""")
     conn.execute("""
+    CREATE TABLE IF NOT EXISTS topic_reports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic TEXT,
+        report TEXT,
+        sources TEXT,
+        searches INTEGER,
+        search_errors TEXT,
+        model TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT

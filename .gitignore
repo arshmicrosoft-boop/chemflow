@@ -117,3 +117,4 @@ sessions/
 chemflow.db
 node_modules/
 datasets/uploads/
+.env
