@@ -3,6 +3,7 @@
 They run a few real research cycles on a subset of the Delaney solubility
 data bundled with DeepChem, so they need RDKit and scikit-learn.
 """
+import json
 import os
 
 import pandas as pd
@@ -11,6 +12,7 @@ import pytest
 from chemflow import (ResearchAgent, ResearchObjective, SandboxPolicy,
                       SandboxViolation, SessionConfig)
 from chemflow.memory import ResearchMemory
+from chemflow.reporting import build_results
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))))
@@ -126,6 +128,27 @@ def test_research_loop_and_resume(tmp_path, config):
     statuses = {h["status"] for h in resumed.memory.hypotheses()}
     assert statuses - {"proposed"}, "hypotheses should have been assessed"
     resumed.close()
+
+
+def test_results_are_structured(tmp_path, config):
+    agent = make_agent(tmp_path, config)
+    empty = build_results(agent.config, agent.memory)
+    assert empty["verdict"]["state"] == "not_started"
+    assert empty["models"] == [] and empty["champion"] is None
+
+    agent.run(max_cycles=4)
+    results = build_results(agent.config, agent.memory)
+    assert results["verdict"]["state"] != "not_started"
+    assert results["budgets"]["experiments"]["used"] == 4
+    assert sum(results["counts"]["experiments"].values()) == 4
+    metrics = [m["metric"] for m in results["models"]]
+    assert metrics == sorted(metrics,
+                             reverse=not config.objective.lower_is_better)
+    assert len(results["findings"]) == len(agent.memory.findings())
+    assert all(e["summary"] for e in results["experiments"])
+    # Per-molecule validation data stays out of the payload.
+    assert "valid_residuals" not in json.dumps(results)
+    agent.close()
 
 
 def test_lab_experiments_need_approval(tmp_path, config):

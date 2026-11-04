@@ -7,10 +7,27 @@ blocked experiments, shows how the model learned over time and states the
 limitations of the work honestly.
 """
 import datetime
-from typing import Any, Dict, List
+import os
+from typing import Any, Dict, Iterable, List, Tuple
 
-from chemflow.config import SessionConfig
+from chemflow.config import ResearchObjective, SessionConfig
 from chemflow.memory import ResearchMemory
+
+LIMITATIONS = [
+    "All experiments are computational. Virtual assays reveal held-back "
+    "measurements from the dataset; they are not new measurements.",
+    "Structure-activity findings are statistical associations between a "
+    "substructure and the target, not causal mechanisms, and can be "
+    "confounded by molecular size or other correlated features.",
+    "The SAR discovery test uses the data the hypothesis was generated "
+    "from; only the validation and hold-out tests are independent.",
+    "Validation and hold-out sets come from a scaffold split of a single "
+    "dataset; performance on other chemistry or assays may differ.",
+    "The sandbox time limit is enforced by abandoning slow experiments; "
+    "Python cannot interrupt a running computation, so it may continue in "
+    "the background until it finishes.",
+    "Findings are only as reliable as the source measurements.",
+]
 
 
 def _table(headers: List[str], rows: List[List[Any]]) -> str:
@@ -141,21 +158,210 @@ def build_report(config: SessionConfig, memory: ResearchMemory) -> str:
                [[a["id"], a["status"], a["description"]] for a in approvals]))
 
     add("## Limitations\n")
-    add("- All experiments are computational. Virtual assays reveal held-back "
-        "measurements from the dataset; they are not new measurements.")
-    add("- Structure-activity findings are statistical associations between "
-        "a substructure and the target, not causal mechanisms, and can be "
-        "confounded by molecular size or other correlated features.")
-    add("- The SAR discovery test uses the data the hypothesis was generated "
-        "from; only the validation and hold-out tests are independent.")
-    add("- Validation and hold-out sets come from a scaffold split of a "
-        "single dataset; performance on other chemistry or assays may "
-        "differ.")
-    add("- The sandbox time limit is enforced by abandoning slow "
-        "experiments; Python cannot interrupt a running computation, so it "
-        "may continue in the background until it finishes.")
-    add("- Findings are only as reliable as the source measurements.\n")
+    for limitation in LIMITATIONS:
+        add("- %s" % limitation)
+    add("")
     return "\n".join(lines)
+
+
+def build_results(config: SessionConfig, memory: ResearchMemory) -> Dict[str, Any]:
+    """The same evidence as the report, as structured data for a results
+    page. Per-molecule data (residuals, hold-out labels) is left out."""
+    obj, pol = config.objective, config.sandbox
+    findings = memory.findings()
+    hyps = {h["id"]: h for h in memory.hypotheses()}
+    exps = memory.experiments()
+    errors = memory.get_state("prediction_errors", [])
+    runs = memory.runs()
+    models = _model_leaderboard(obj, hyps, exps, findings)
+    return {
+        "objective": {
+            "name": obj.name,
+            "question": obj.question,
+            "dataset": os.path.basename(obj.dataset),
+            "target": obj.target_column,
+            "task": obj.task,
+            "metric": obj.primary_metric,
+            "lower_is_better": obj.lower_is_better,
+            "threshold": obj.success_threshold,
+            "confidence_level": pol.confidence_level,
+        },
+        "verdict": _verdict(obj, exps, models),
+        "progress": {
+            "cycles": memory.cycle,
+            "runs": len(runs),
+            "stop_reason": runs[-1]["stop_reason"] if runs else None,
+        },
+        "champion": memory.get_state("champion"),
+        "counts": {
+            "findings": _count(findings),
+            "experiments": _count(exps),
+            "hypotheses": _count(hyps.values()),
+        },
+        "budgets": {
+            "experiments": {"used": len(exps),
+                            "total": pol.max_experiments_total},
+            "assays": {"used": len(memory.datapoints("virtual_assay")),
+                       "total": pol.assay_budget},
+            "holdout": {"used": memory.get_state("holdout_uses", 0),
+                        "total": pol.max_holdout_evaluations},
+        },
+        "models": models,
+        "learning_curve": memory.get_state("learning_curve", []),
+        "structure_effects": _structure_effects(hyps, findings),
+        "findings": [_finding(f, hyps) for f in findings],
+        "experiments": [{
+            "id": e["id"],
+            "cycle": e["cycle"],
+            "kind": e["kind"],
+            "status": e["status"],
+            "hypothesis_id": e["hypothesis_id"],
+            "summary": _summarise(e),
+        } for e in exps],
+        "gaps": memory.get_state("knowledge_gaps", []),
+        "approvals": [{
+            "id": a["id"],
+            "status": a["status"],
+            "description": a["description"],
+            "molecules": a["payload"].get("molecules", []),
+        } for a in memory.approvals()],
+        "self_evaluation": {
+            "mean_absolute_error":
+                sum(abs(e["error"]) for e in errors) / len(errors),
+            "n": len(errors),
+        } if errors else None,
+        "limitations": LIMITATIONS,
+    }
+
+
+def _count(rows: Iterable[Dict[str, Any]]) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for r in rows:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    return counts
+
+
+def _meets(obj: ResearchObjective, value: float) -> bool:
+    t = obj.success_threshold
+    return value <= t if obj.lower_is_better else value >= t
+
+
+def _model_leaderboard(obj: ResearchObjective, hyps: Dict[str, Dict[str, Any]],
+                       exps: List[Dict[str, Any]],
+                       findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The best tested configuration of each model/featurizer pair, best
+    first: a validated configuration if there is one, otherwise the highest
+    scoring. A pair's metric is its first run; replicates and hold-out
+    evaluations are reported beside it, as the evaluation engine does."""
+    finding_of = {f["hypothesis_id"]: f for f in findings}
+    pairs: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+    for e in exps:
+        h = hyps.get(e["hypothesis_id"])
+        if e["kind"] != "train_evaluate" or e["status"] != "completed" or \
+                h is None or h["kind"] != "model":
+            continue
+        pairs.setdefault((h["params"]["model"], h["params"]["featurizer"]),
+                         []).append(e)
+    sign = 1 if obj.lower_is_better else -1
+    board = []
+    for (model, featurizer), runs in pairs.items():
+        best = min(runs, key=lambda e: (
+            hyps[e["hypothesis_id"]]["status"] != "validated",
+            sign * e["result"]["metric"]))
+        r, hid = best["result"], best["hypothesis_id"]
+        evidence = (finding_of.get(hid) or {}).get("evidence", {})
+        board.append({
+            "model": model,
+            "featurizer": featurizer,
+            "metric": r["metric"],
+            "ci": [r["ci_low"], r["ci_high"]],
+            "n_train": r["n_train"],
+            "configs_tested": len(runs),
+            "status": hyps[hid]["status"],
+            "meets_target": _meets(obj, r["metric"]),
+            "replicate_metric": evidence.get("replicate_metric"),
+            "holdout_metric": evidence.get("holdout_metric"),
+        })
+    return sorted(board, key=lambda m: sign * m["metric"])
+
+
+def _verdict(obj: ResearchObjective, exps: List[Dict[str, Any]],
+             models: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Whether the research objective has been answered, in one line."""
+    name = "%s on %s" % (models[0]["model"],
+                         models[0]["featurizer"]) if models else ""
+    goal = "%s %s %s" % (obj.primary_metric, "<=" if obj.lower_is_better else
+                         ">=", obj.success_threshold)
+    validated = [m for m in models if m["status"] == "validated"]
+    if validated:
+        best = validated[0]
+        return {
+            "state": "validated",
+            "headline": "Objective met: %s on %s is validated" %
+                        (best["model"], best["featurizer"]),
+            "detail": "Hit %s on validation data, reproduced it, and held up "
+                      "on the locked hold-out set." % goal,
+        }
+    if not models:
+        return {
+            "state": "not_started",
+            "headline": "No results yet",
+            "detail": "%d experiment(s) recorded, none produced a trained "
+                      "model. Run research to start." % len(exps),
+        }
+    if models[0]["meets_target"]:
+        return {
+            "state": "promising",
+            "headline": "Promising, not yet validated: %s" % name,
+            "detail": "The best model reaches %s, but the evidence does not "
+                      "support a claim yet." % goal,
+        }
+    return {
+        "state": "below_target",
+        "headline": "Target not reached yet",
+        "detail": "Best so far is %s; the target is %s." % (name, goal),
+    }
+
+
+def _structure_effects(hyps: Dict[str, Dict[str, Any]],
+                       findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Tested substructures, strongest discovery effect first."""
+    effects = []
+    for f in findings:
+        h, ev = hyps[f["hypothesis_id"]], f["evidence"]
+        if h["kind"] != "sar" or "discovery" not in ev:
+            continue
+        effects.append({
+            "group": h["params"]["group"],
+            "direction": h["params"]["direction"],
+            "status": f["status"],
+            "discovery": ev["discovery"],
+            "replication": ev.get("replication"),
+            "holdout": ev.get("holdout"),
+        })
+    return sorted(effects, key=lambda e: -abs(e["discovery"]["effect_size"]))
+
+
+def _finding(f: Dict[str, Any], hyps: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    h, ev = hyps[f["hypothesis_id"]], f["evidence"]
+    p = h["params"]
+    return {
+        "id": f["id"],
+        "kind": h["kind"],
+        "title": ("%s on %s" % (p["model"], p["featurizer"])
+                  if h["kind"] == "model" else p["group"]),
+        "status": f["status"],
+        "claim": f["claim"],
+        "confidence": f["confidence"],
+        "checks": {
+            "meets_confidence": ev.get("meets_confidence"),
+            "reproducible": ev.get("reproducible"),
+            "independent_validation": ev.get("independent_validation"),
+        },
+        "reasons": ev.get("certificate_reasons", []),
+        "supporting_experiments": ev.get("supporting_experiments", []),
+        "updated_cycle": f["updated_cycle"],
+    }
 
 
 def _summarise(e: Dict[str, Any]) -> str:
