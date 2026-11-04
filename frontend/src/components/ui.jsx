@@ -62,7 +62,7 @@ export function Glass({ as: Tag = 'section', className = '', children, ...rest }
 
 export function Panel({ title, hint, action, children, className = '' }) {
   return (
-    <Glass className={`p-5 sm:p-6 rise ${className}`}>
+    <Glass className={`p-5 sm:p-6 rise min-w-0 ${className}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-4">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
@@ -78,7 +78,7 @@ export function Panel({ title, hint, action, children, className = '' }) {
 export function Stat({ label, value, note }) {
   return (
     <div className="plate p-4 min-w-0">
-      <div className="text-xs font-medium text-ink-2">{label}</div>
+      <div className="tech text-[11px] text-ink-2">{label}</div>
       <div className="tnum text-2xl sm:text-3xl font-semibold tracking-tight mt-1 truncate">{value}</div>
       {note && <div className="text-xs text-ink-2 mt-1">{note}</div>}
     </div>

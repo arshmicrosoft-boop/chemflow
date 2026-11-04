@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, matchPath, useLocation, useSearchParams } from 'react-router-dom';
 import Workspace from './pages/Workspace.jsx';
 import Results from './pages/Results.jsx';
+import Topics from './pages/Topics.jsx';
+import { ElectricLogo } from './components/flair.jsx';
 
 function useTheme() {
   const [dark, setDark] = useState(() => {
@@ -40,15 +42,16 @@ function Nav({ dark, onTheme }) {
   const [params] = useSearchParams();
   const pid = matchPath('/projects/:id/results', pathname)?.params.id || params.get('project');
   const home = pid ? `/?project=${pid}` : '/';
-  const link = ({ isActive }) => `px-3 py-1.5 rounded-full text-sm font-semibold ${isActive ? 'text-ink bg-[var(--glass-strong)]' : 'text-ink-2 hover:text-ink'}`;
+  const link = ({ isActive }) => `px-2 sm:px-3 py-1.5 rounded-full text-sm font-semibold ${isActive ? 'text-ink bg-[var(--glass-strong)]' : 'text-ink-2 hover:text-ink'}`;
 
   return (
     <div className="sticky top-3 z-30 mb-8">
-      <nav aria-label="Main" className="glass lens flex items-center justify-between gap-3 !rounded-full pl-5 pr-2 py-2">
-        <Link to={home} className="font-semibold tracking-tight text-lg">ChemFlow</Link>
-        <div className="flex items-center gap-1">
+      <nav aria-label="Main" className="glass lens flex items-center justify-between gap-3 !rounded-full pl-3 sm:pl-5 pr-2 py-2">
+        <Link to={home} aria-label="ChemFlow" className="logo-link inline-flex items-center gap-2 font-semibold tracking-tight text-lg shrink-0"><ElectricLogo /><span className="hidden sm:inline">ChemFlow</span></Link>
+        <div className="flex items-center sm:gap-1">
           <NavLink to={home} end className={link}>Workspace</NavLink>
           {pid && <NavLink to={`/projects/${pid}/results`} className={link}>Results</NavLink>}
+          <NavLink to="/topics" className={link}>Topics</NavLink>
           <button onClick={() => onTheme(!dark)} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} className="w-9 h-9 rounded-full text-ink-2 hover:text-ink">
             <span aria-hidden="true">{dark ? '☀' : '☽'}</span>
           </button>
@@ -77,6 +80,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Workspace />} />
           <Route path="/projects/:id/results" element={<Results />} />
+          <Route path="/topics" element={<Topics />} />
+          <Route path="/topics/:id" element={<Topics />} />
         </Routes>
       </div>
     </>

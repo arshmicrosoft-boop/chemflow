@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { LearningCurve, ModelLeaderboard, StructureEffects } from '../components/charts.jsx';
+import { MicroStats, TechText, projectMicroStats } from '../components/flair.jsx';
 import { Budget, Glass, Notice, Panel, Segmented, Stat, Status, fmt, kindLabel, metricLabel, pretty } from '../components/ui.jsx';
 
 const VERDICTS = {
@@ -28,7 +29,7 @@ function Hero({ project, results }) {
 
   return (
     <Glass className="p-6 sm:p-8 rise">
-      <div className="text-sm font-medium text-ink-2 mb-3">{project?.name} · {objective.name}</div>
+      <TechText text={`Results // ${project?.name}`} className="block text-xs text-ink-2 mb-3" />
       <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-6 items-start">
         <div className="min-w-0">
           <span className={`pill ${tone} mb-3`}><span aria-hidden="true">{icon}</span>{label}</span>
@@ -38,7 +39,7 @@ function Hero({ project, results }) {
         </div>
         {champion && (
           <div className="plate p-5 lg:min-w-64">
-            <div className="text-xs font-medium text-ink-2">Current best {name}</div>
+            <div className="tech text-[11px] text-ink-2">Current best {name}</div>
             <div className="tnum text-5xl font-semibold tracking-tight mt-1">{fmt(champion.metric)}</div>
             <div className="tnum text-xs text-ink-2 mt-1">
               {Math.round(objective.confidence_level * 100)}% CI {fmt(champion.ci[0])} to {fmt(champion.ci[1])}
@@ -53,6 +54,7 @@ function Hero({ project, results }) {
         <Stat label="Experiments" value={results.experiments.length} note={`${counts.experiments.failed || 0} failed, ${counts.experiments.blocked || 0} blocked`} />
         <Stat label="Research cycles" value={progress.cycles} note={progress.stop_reason ? `Stopped: ${progress.stop_reason}` : 'Not run yet'} />
       </div>
+      <MicroStats className="mt-3" items={projectMicroStats(results)} />
     </Glass>
   );
 }

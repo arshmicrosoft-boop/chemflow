@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import NewProjectForm from '../components/NewProjectForm.jsx';
+import { CircularCarousel, MicroStats, TechText, projectMicroStats } from '../components/flair.jsx';
 import { Budget, Glass, Notice, Panel, Stat, Status, fmt, kindLabel, metricLabel, pretty } from '../components/ui.jsx';
 
 const describeEvent = (e) => {
@@ -20,6 +21,7 @@ export default function Workspace() {
   const [running, setRunning] = useState(false);
   const [lastRun, setLastRun] = useState(null);
   const [error, setError] = useState(null);
+  const [counts, setCounts] = useState({ datasets: null, reports: null });
 
   const loadProjects = useCallback(() => {
     setError(null);
@@ -39,6 +41,12 @@ export default function Workspace() {
   }, []);
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
+
+  useEffect(() => {
+    Promise.allSettled([api.datasets(), api.topics()]).then(([d, t]) => {
+      setCounts({ datasets: d.value?.length ?? null, reports: t.value?.length ?? null });
+    });
+  }, []);
 
   useEffect(() => {
     setResults(null);
@@ -74,8 +82,15 @@ export default function Workspace() {
   return (
     <main className="space-y-5">
       <header className="rise pt-2 pb-3">
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">Research workspace</h1>
+        <TechText text="ChemFlow // Research engine" className="text-xs text-ink-2" />
+        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mt-1">Research workspace</h1>
         <p className="text-ink-2 mt-2 max-w-2xl">Start a project and the agent proposes hypotheses, runs real DeepChem experiments in the sandbox, and only claims what the evidence supports.</p>
+        <MicroStats className="mt-5" items={[
+          { label: 'Projects', value: projects?.length ?? '—' },
+          { label: 'Runs this project', value: results?.experiments.length ?? '—' },
+          { label: 'Datasets', value: counts.datasets ?? '—' },
+          { label: 'Topic reports', value: counts.reports ?? '—' },
+        ]} />
       </header>
 
       {error && <Notice tone="bad" title="ChemFlow hit a problem" action={<button className="btn" onClick={loadProjects}>Retry</button>}>{error}</Notice>}
@@ -123,6 +138,7 @@ export default function Workspace() {
               <Stat label={`Best ${metricLabel(results.objective.metric)}`} value={fmt(champion?.metric)} note={champion ? pretty(champion.model) : 'No model yet'} />
               <Stat label="Validated findings" value={results.counts.findings.validated || 0} note={`of ${results.findings.length} assessed`} />
             </div>
+            <MicroStats className="mt-3" items={projectMicroStats(results)} />
           </Glass>
 
           <div className="grid lg:grid-cols-2 gap-5">
@@ -182,6 +198,10 @@ export default function Workspace() {
       {!selected && projects?.length > 0 && (
         <Notice title="Select a project">Choose a project above to see its research and run more cycles.</Notice>
       )}
+
+      <Panel title="How research works" hint="The loop the agent repeats every cycle">
+        <CircularCarousel />
+      </Panel>
 
       <footer className="text-xs text-ink-2 pt-4">
         Results come from the ChemFlow engine (<code>chemflow/agent.py</code>, <code>sandbox.py</code>, <code>memory.py</code>). Hold-out labels stay locked.

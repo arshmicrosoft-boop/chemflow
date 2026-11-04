@@ -20,6 +20,7 @@
   --glass-shadow: 0 1px 2px rgba(20, 30, 60, 0.06), 0 12px 36px rgba(20, 30, 60, 0.12);
   --sheen: rgba(255, 255, 255, 0.55);
   --plate: rgba(255, 255, 255, 0.72);
+  --card: #f3f7fc;
   --hairline: rgba(20, 30, 50, 0.1);
   --grid: rgba(20, 30, 50, 0.12);
   --accent: #1f6fd0;
@@ -54,6 +55,7 @@ html.dark {
   --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 44px rgba(0, 0, 0, 0.45);
   --sheen: rgba(255, 255, 255, 0.13);
   --plate: rgba(14, 18, 27, 0.6);
+  --card: #161c2b;
   --hairline: rgba(255, 255, 255, 0.1);
   --grid: rgba(255, 255, 255, 0.14);
   --accent: #6db0ff;
@@ -273,4 +275,61 @@ html[data-refract] .lens {
   .glass, .tip { background: var(--scene); -webkit-backdrop-filter: none; backdrop-filter: none; }
   html[data-refract] .lens { -webkit-backdrop-filter: none; backdrop-filter: none; }
   .scene i { display: none; }
+}
+
+/* Tech text: fixed-width labels, so decoding text never shifts the layout. */
+.tech {
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.micro-stat {
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--plate);
+  border: 1px solid var(--hairline);
+}
+
+/* Electric logo */
+.electric-logo { overflow: visible; filter: drop-shadow(0 0 4px rgba(109, 176, 255, 0.75)); }
+.electric-bolt { animation: flicker 3.4s linear infinite; }
+.logo-link:hover .electric-logo { filter: drop-shadow(0 0 9px rgba(54, 214, 180, 0.95)); }
+@keyframes flicker {
+  0%, 18%, 22%, 62%, 66%, 100% { opacity: 1; }
+  20%, 64% { opacity: 0.45; }
+}
+
+/* Circular carousel: cards stand on a ring and the ring turns. */
+.carousel { position: relative; height: 150px; perspective: 1100px; overflow: hidden; }
+.carousel-ring {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.3, 1.1, 0.5, 1);
+}
+.carousel-card {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  width: 130px;
+  height: 92px;
+  margin-left: -65px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-rim);
+  transition: opacity 0.6s, border-color 0.6s;
+}
+.carousel-card.is-active { border-color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .electric-bolt { animation: none; }
+  .carousel-ring, .carousel-card { transition: none; }
 }
