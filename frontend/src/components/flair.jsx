@@ -12,8 +12,8 @@ export function ElectricLogo({ size = 30 }) {
     <svg width={size} height={size} viewBox="0 0 32 32" className="electric-logo" aria-hidden="true">
       <defs>
         <linearGradient id="electric-stroke" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6db0ff" />
-          <stop offset="1" stopColor="#36d6b4" />
+          <stop offset="0" stopColor="#d6c4ff" />
+          <stop offset="1" stopColor="#8b5cf6" />
         </linearGradient>
         <filter id="electric-arc" x="-20%" y="-20%" width="140%" height="140%">
           <feTurbulence type="turbulence" baseFrequency="0.09" numOctaves="2" seed="2" result="noise">

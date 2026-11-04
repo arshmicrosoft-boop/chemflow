@@ -230,3 +230,48 @@ def test_provider_follows_the_keys(monkeypatch, anthropic_key, openrouter_key, p
     monkeypatch.delenv("OPENROUTER_MODEL", raising=False)
     assert topic_research.active_provider() == provider
     assert topic_research.active_model() == model
+
+
+def setup_chat(monkeypatch, outcomes, key="o"):
+    tried = []
+
+    def complete(model, messages, timeout):
+        tried.append((model, messages))
+        outcome = outcomes[len(tried) - 1]
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    monkeypatch.setattr(topic_research, "load_dotenv", lambda *a, **k: None)
+    monkeypatch.setenv("OPENROUTER_API_KEY", key)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_MODEL", raising=False)
+    monkeypatch.setattr(topic_research, "free_models", lambda p="": ["one:free", "two:free"])
+    monkeypatch.setattr(topic_research, "_complete", complete)
+    return tried
+
+
+def test_chat_keeps_the_conversation_and_answers(monkeypatch):
+    tried = setup_chat(monkeypatch, [" Hello. "])
+    history = [{"role": "user", "content": "Hi"}]
+    assert topic_research.chat(history) == {"reply": "Hello.", "model": "one:free"}
+    assert [m["role"] for m in tried[0][1]] == ["system", "user"]
+
+
+def test_chat_switches_to_the_next_free_model(monkeypatch):
+    setup_chat(monkeypatch, [ResearchError("busy", status=429), "Hello."])
+    assert topic_research.chat([{"role": "user", "content": "Hi"}])["model"] == "two:free"
+
+
+def test_chat_does_not_switch_on_a_bad_key(monkeypatch):
+    tried = setup_chat(monkeypatch, [ResearchError("bad key", status=401), "Hello."])
+    with pytest.raises(ResearchError):
+        topic_research.chat([{"role": "user", "content": "Hi"}])
+    assert len(tried) == 1
+
+
+def test_chat_explains_a_missing_key(monkeypatch):
+    setup_chat(monkeypatch, [], key="")
+    with pytest.raises(ResearchError) as e:
+        topic_research.chat([{"role": "user", "content": "Hi"}])
+    assert e.value.status == 503

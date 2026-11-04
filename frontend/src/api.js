@@ -32,6 +32,11 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(project),
   }),
+  chat: (messages) => request('/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+  }),
   topicStatus: () => request('/topics/status'),
   topics: () => request('/topics'),
   topic: (id) => request(`/topics/${id}`),

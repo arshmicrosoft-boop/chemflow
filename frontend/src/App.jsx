@@ -4,6 +4,7 @@ import Workspace from './pages/Workspace.jsx';
 import Results from './pages/Results.jsx';
 import Topics from './pages/Topics.jsx';
 import { ElectricLogo } from './components/flair.jsx';
+import ChatBar from './components/ChatBar.jsx';
 import PasswordGate from './components/PasswordGate.jsx';
 
 function useTheme() {
@@ -12,7 +13,7 @@ function useTheme() {
       const saved = localStorage.getItem('chemflow-theme');
       if (saved) return saved === 'dark';
     } catch { /* storage may be blocked */ }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return true;
   });
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -77,7 +78,7 @@ export default function App() {
         </filter>
       </svg>
       <PasswordGate>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-28">
         <Nav dark={dark} onTheme={setDark} />
         <Routes>
           <Route path="/" element={<Workspace />} />
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="/topics/:id" element={<Topics />} />
         </Routes>
       </div>
+      <ChatBar />
       </PasswordGate>
     </>
   );

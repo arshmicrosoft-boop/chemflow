@@ -7,11 +7,11 @@
   --ink: #10141c;
   --ink-2: #434a58;
   --ink-3: #626a7a;
-  --scene: #e8eef7;
-  --blob-1: #5ab4ff;
-  --blob-2: #36d6b4;
-  --blob-3: #b78cff;
-  --blob-4: #ffb27a;
+  --scene: #f1ebfb;
+  --blob-1: #c4a7ff;
+  --blob-2: #a78bfa;
+  --blob-3: #d8c7ff;
+  --blob-4: #8b5cf6;
   --glass-bg: rgba(255, 255, 255, 0.5);
   --glass-strong: rgba(255, 255, 255, 0.68);
   --glass-edge: rgba(255, 255, 255, 0.75);
@@ -23,7 +23,7 @@
   --card: #f3f7fc;
   --hairline: rgba(20, 30, 50, 0.1);
   --grid: rgba(20, 30, 50, 0.12);
-  --accent: #1f6fd0;
+  --accent: #6d28d9;
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
@@ -42,23 +42,23 @@ html.dark {
   --ink: #f2f4f8;
   --ink-2: #c0c6d2;
   --ink-3: #979fae;
-  --scene: #070a12;
-  --blob-1: #1e5fd0;
-  --blob-2: #0d8f7c;
-  --blob-3: #6a35d6;
-  --blob-4: #a8481c;
-  --glass-bg: rgba(28, 33, 46, 0.46);
-  --glass-strong: rgba(36, 42, 58, 0.62);
+  --scene: #050308;
+  --blob-1: #4c1d95;
+  --blob-2: #2e1065;
+  --blob-3: #6d28d9;
+  --blob-4: #3b0764;
+  --glass-bg: rgba(24, 16, 40, 0.5);
+  --glass-strong: rgba(34, 22, 58, 0.66);
   --glass-edge: rgba(255, 255, 255, 0.14);
   --glass-rim: rgba(255, 255, 255, 0.28);
   --glass-floor: rgba(0, 0, 0, 0.3);
   --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 44px rgba(0, 0, 0, 0.45);
   --sheen: rgba(255, 255, 255, 0.13);
-  --plate: rgba(14, 18, 27, 0.6);
-  --card: #161c2b;
+  --plate: rgba(10, 6, 18, 0.62);
+  --card: #150e24;
   --hairline: rgba(255, 255, 255, 0.1);
   --grid: rgba(255, 255, 255, 0.14);
-  --accent: #6db0ff;
+  --accent: #b794ff;
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
@@ -168,9 +168,9 @@ html[data-refract] .lens {
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-primary {
   color: #fff;
-  background: linear-gradient(180deg, #2f8bf0, #1a63c9);
+  background: linear-gradient(180deg, #8b5cf6, #6d28d9);
   border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 6px 18px rgba(26, 99, 201, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 6px 18px rgba(109, 40, 217, 0.45);
 }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -293,9 +293,9 @@ html[data-refract] .lens {
 }
 
 /* Electric logo */
-.electric-logo { overflow: visible; filter: drop-shadow(0 0 4px rgba(109, 176, 255, 0.75)); }
+.electric-logo { overflow: visible; filter: drop-shadow(0 0 4px rgba(183, 148, 255, 0.8)); }
 .electric-bolt { animation: flicker 3.4s linear infinite; }
-.logo-link:hover .electric-logo { filter: drop-shadow(0 0 9px rgba(54, 214, 180, 0.95)); }
+.logo-link:hover .electric-logo { filter: drop-shadow(0 0 9px rgba(167, 139, 250, 0.95)); }
 @keyframes flicker {
   0%, 18%, 22%, 62%, 66%, 100% { opacity: 1; }
   20%, 64% { opacity: 0.45; }
@@ -333,3 +333,48 @@ html[data-refract] .lens {
   .electric-bolt { animation: none; }
   .carousel-ring, .carousel-card { transition: none; }
 }
+
+/* AI bar: stays at the bottom of every page, above the content. */
+.chat-dock {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: min(420px, calc(100vh - 170px));
+  background: var(--card);
+  border-radius: 22px;
+}
+.chat-dock > form { background: var(--card); }
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 15px;
+  color: var(--ink);
+  background: transparent;
+  outline: none;
+}
+.chat-input::placeholder { color: var(--ink-2); }
+.chat-bubble {
+  width: fit-content;
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--plate);
+  border: 1px solid var(--hairline);
+}
+.chat-bubble.is-user { margin-left: auto; color: #fff; background: #6d28d9; border-color: transparent; }

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+from typing import List, Literal, Optional, Dict, Any
 import io, os, json, re, time
 import pandas as pd
 
@@ -23,6 +23,8 @@ DATASET_SUFFIXES = (".csv", ".csv.gz")
 DATASET_PREVIEW_ROWS = 2000
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_TOPIC_CHARS = 500
+MAX_CHAT_CHARS = 8000
+MAX_CHAT_MESSAGES = 20
 
 class ProjectCreate(BaseModel):
     name: str
@@ -320,6 +322,24 @@ async def get_report(pid: int):
 class TopicRequest(BaseModel):
     topic: str
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=MAX_CHAT_CHARS)
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage] = Field(min_length=1)
+
+# A plain def, like create_topic: the model can take a while to answer.
+@router.post("/chat")
+def chat(c: ChatRequest):
+    if c.messages[-1].role != "user":
+        raise HTTPException(status_code=400, detail="The last message must be a question")
+    recent = c.messages[-MAX_CHAT_MESSAGES:]
+    try:
+        return topic_research.chat([m.model_dump() for m in recent])
+    except topic_research.ResearchError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+
 def _topic_report(row) -> Dict[str, Any]:
     report = dict(row)
     report["sources"] = json.loads(report["sources"])
@@ -383,6 +403,7 @@ async def explain():
         "what_is_real": "Experiments use actual DeepChem featurizers and sklearn models. Results are real predictions, not mocked.",
         "budget_enforced": "Sandbox limits experiments (max_experiments_total=50), assay budget (100), runtime limits, and locks holdout labels",
         "endpoints": {
+            "/chat": "AI assistant that answers questions using free models (needs an OpenRouter key)",
             "/topics": "AI research on a written topic, using web search (needs an API key)",
             "/datasets": "List CSV datasets, or upload one",
             "/datasets/info": "Columns of a dataset and which one holds the molecules",
